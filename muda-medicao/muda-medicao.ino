@@ -16,20 +16,19 @@
 ///////////////////////////////////////////////////////////
 
 // Define constantes //////////////////////////////////////
-#define MINDIST 0                                       
-#define MAXDIST 10                                     
+#define MINDIST 5                                      
+#define MAXDIST 20                                    
 #define MINTEMP 30                                    
 #define MAXTEMP 37                                 
-#define MINNORMALTEMP 30                                    
-#define MAXNORMALTEMP 60
-#define TOTALREADTEMP 40
+#define MINNORMALTEMP 34                                   
+#define MAXNORMALTEMP 40
+#define TOTALREADTEMP 50
 #define FACTOR_EMICTION 1.132                            
 ///////////////////////////////////////////////////////////
 
 // Variaveis obtidas na leitura ///////////////////////////
-float dist, tempCorp, tempAmb, sumTemp, medTemp;                     
+float dist, tempCorp, sumTemp, medTemp;                     
 float readTemp[TOTALREADTEMP];                          
-int loopReadTemp;                              
 ///////////////////////////////////////////////////////////
 
 // Cria objeto do sensor de distancia /////////////////////
@@ -53,41 +52,22 @@ float lerTemp () {
 }
 //////////////////////////////////////////////////////////
 
-// Print distância lida ///////////////////////////////
-void printDist () {
-  Serial.print("Distancia em cm: ");
-  Serial.println(dist);
-}
-//////////////////////////////////////////////////////////
-
-// Print tempCorperatura lida ///////////////////////////////
-void printTemp () {
-  Serial.print("Temperatura: ");
-  Serial.print(tempCorp);
-  Serial.println(" *C");
-}
-//////////////////////////////////////////////////////////
-
-// Ordena vetor temperatura /////////////////////////////
-void ordenar () {
-  int count, indice, i_maior, auxiliar;
-  for (count = TOTALREADTEMP - 1; count > 0; count--) {
-    for (indice = 1, i_maior = 0; indice < TOTALREADTEMP; indice++) {
-      if(readTemp[indice] < readTemp[i_maior]) {
-        i_maior = indice;
-      }
-    }
-    auxiliar = readTemp[i_maior];
-    readTemp[i_maior] = readTemp[indice];
-    readTemp[indice] = auxiliar;
+// funcao que fica procurando um objeto ate achar ///////
+void achaPessoa () {
+  dist = lerDistancia();
+  while ( !( MINDIST < dist && dist < MAXDIST ) ) {
+    dist = lerDistancia();
+    Serial.println("Se aproxime ao sensor.");
   }
+  return;
 }
 //////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////
 // função que le x temperaturas para um vetor
 //////////////////////////////////////////////////////////
 void lerVet () {
-  for(int i = 0; i < TOTALREADTEMP; i++){
+  for(int i = 0; i < TOTALREADTEMP; i++) {
       readTemp[i] = lerTemp() * FACTOR_EMICTION;
       Serial.print("Temperatura n");
       Serial.print(i+1);
@@ -103,19 +83,14 @@ void lerVet () {
 // de valores aceitaveis /////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 float calcMedia () {
-  int i, j, k;
-  k = 0;
-  sumTemp = 0;
-  int equilibrio = floor((TOTALREADTEMP/3) * 2);
-  for(i = j = TOTALREADTEMP - equilibrio; i < equilibrio; i++){
-    if (MINNORMALTEMP < readTemp[i] && readTemp[i] < MAXNORMALTEMP){
+  int i, k;
+  for(i = sumTemp = k = 0; i < TOTALREADTEMP; i++) {
+    if (MINNORMALTEMP < readTemp[i] && readTemp[i] < MAXNORMALTEMP) {
       sumTemp += readTemp[i];
-      j++;
       k++;
     }
   }
   if (!k) return 0;
-  
   return sumTemp / k;   
 }
 
@@ -154,14 +129,14 @@ void setup() {
   Serial.println();
   Serial.print("Iniciando dispositivos");
   mlx.begin();
-  for(int i = 0; i < 3; i++){
+  for(int i = 0; i < 3; i++) {
     delay(500);
     Serial.print(".");
   }
   Serial.println();
   
   Serial.print("Iniciando leituras");
-  for(int i = 0; i < 3; i++){
+  for(int i = 0; i < 3; i++) {
     delay(500);
     Serial.print(".");
   }
@@ -172,47 +147,35 @@ void setup() {
 
 // funcao principal, o loop /////////////////////////////
 void loop() {
-  dist = lerDistancia();
-  while ( !( MINDIST < dist && dist < MAXDIST ) ){
-    dist = lerDistancia();
-    Serial.println("Se aproxime ao sensor.");
-  }
-  delay(1000);
-  for (loopReadTemp = 0; loopReadTemp < 5; loopReadTemp++) {
+  achaPessoa();
+  delay(500);
 
-    Serial.println("-------------------------------");
+  Serial.println("-------------------------------");
+  lerVet();
+  Serial.println("-------------------------------");
 
+  medTemp = calcMedia();
+
+  while(!medTemp) {
+    achaPessoa();
     lerVet();
-    
-    Serial.println("-------------------------------");
-
-    ordenar();
-
     medTemp = calcMedia();
-
-    Serial.print("Temperatura media é: ");
-    Serial.println(medTemp);
-    
-    Serial.println("-------------------------------");
-
-    if ( MINTEMP < medTemp && medTemp < MAXTEMP ){
-      onGreenLed();
-      Serial.println("Sua temperatura está correta. Pode continuar");
-      delay(2000);
-      break;
-    }
-
-    if ( MAXTEMP < medTemp ){
-      onRedLed();
-      Serial.println("Sua temperatura não está bem.");
-      delay(2000);
-      break;
-    }
   }
-  if (loopReadTemp == 5 || !medTemp) Serial.println("Sua medição falhou!");
 
+  Serial.print("Temperatura media é: ");
+  Serial.println(medTemp);
+  Serial.println("-------------------------------");
+
+  if ( MINTEMP < medTemp && medTemp < MAXTEMP ) {
+    onGreenLed();
+    Serial.println("Sua temperatura está correta. Pode continuar");
+  }else {
+    onRedLed();
+    Serial.println("Sua temperatura não está bem.");
+  }
+  delay(2000);
   offRedLed();
   offGreenLed();
-  delay(3000);
+  delay(2000);
 }
 //////////////////////////////////////////////////////////
