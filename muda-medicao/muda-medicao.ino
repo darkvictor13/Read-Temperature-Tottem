@@ -19,7 +19,7 @@
 #define MINDIST 5                                      
 #define MAXDIST 20                                    
 #define MINTEMP 30                                    
-#define MAXTEMP 37                                 
+#define MAXTEMP 37.8                               
 #define MINNORMALTEMP 34                                   
 #define MAXNORMALTEMP 40
 #define TOTALREADTEMP 50
@@ -141,7 +141,6 @@ void setup() {
     Serial.print(".");
   }
   Serial.println();
-
 }
 //////////////////////////////////////////////////////////
 
@@ -155,7 +154,6 @@ void loop() {
   Serial.println("-------------------------------");
 
   medTemp = calcMedia();
-
   while(!medTemp) {
     achaPessoa();
     lerVet();
